@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>投稿詳細</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: "Inter","Segoe UI",Tahoma,Geneva,Verdana,sans-serif; background:#f0fff4; color:#2a4d14; margin:0; }
+  header { background:#4caf50; color:#fff; padding:1rem; text-align:center; font-weight:bold; position:sticky; top:0; z-index:100; }
+  .container { max-width:720px; margin:1rem auto; background:#fff; border-radius:12px; padding:1rem 1.2rem; box-shadow:0 2px 12px rgba(0,0,0,.1); }
+  .post-box { border:1px solid #ddd; border-radius:10px; padding:1rem; margin-bottom:1rem; }
+  .post-head { display:flex; gap:.6rem; align-items:center; margin-bottom:.5rem; }
+  .post-head img { width:40px; height:40px; border-radius:50%; }
+  .meta { font-size:.85rem; color:#555; }
+  .hashtags { margin-top:.4rem; display:flex; flex-wrap:wrap; gap:.4rem; }
+  .tag { font-size:.85rem; padding:.1rem .5rem; border-radius:12px; background:#e8f5e9; cursor:pointer; user-select:none; }
+  .reply { border-bottom:1px solid #eee; padding:.7rem 0; }
+  .reply.self { background:#e8f5e9; border-radius:8px; padding:.7rem; }
+  .reply img { max-width:200px; max-height:120px; display:block; margin-top:.4rem; border-radius:4px; }
+  .reply-list { margin-bottom:1rem; }
+  .editor { border-top:1px dashed #c8e6c9; padding-top:1rem; }
+  .row { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+  input, select, textarea, button { font-size:1rem; }
+  textarea { width:100%; min-height:90px; box-sizing:border-box; }
+  input[type="text"] { width:100%; box-sizing:border-box; }
+  button { background:#4caf50; color:#fff; border:none; padding:.6rem 1rem; border-radius:8px; cursor:pointer; }
+  button:disabled { background:#a5d6a7; cursor:not-allowed; }
+  .danger { background:#c62828; }
+  .muted { color:#666; font-size:.9rem; }
+  .back { display:inline-block; margin:.6rem 0 0 0; text-decoration:none; }
+</style>
+</head>
+<body>
+<header>投稿詳細</header>
+<div class="container">
+  <a class="back" href="Study board.html">← 一覧へ戻る</a>
+
+  <div id="post-box" class="post-box">
+    <div class="post-head">
+      <img id="post-icon" alt="icon" />
+      <div>
+        <div><strong id="post-user"></strong> <span class="muted" id="post-grade"></span></div>
+        <div class="meta" id="post-time"></div>
+      </div>
+    </div>
+    <div class="meta"><strong>教科:</strong> <span id="post-subject"></span></div>
+    <div id="post-content" style="white-space:pre-wrap;margin:.4rem 0;"></div>
+    <img id="post-image" style="display:none; max-width:260px; max-height:160px; border-radius:6px;" />
+    <div id="post-tags" class="hashtags"></div>
+
+    <div id="post-actions" style="margin-top:.6rem;">
+      <button id="good-btn">👍 <span id="good-count">0</span></button>
+      <button id="delete-btn" style="background:#c62828; color:#fff; display:none;">削除</button>
+    </div>
+    
+
+    <!-- 投稿者限定エリア -->
+    <div id="owner-tools" style="display:none; margin-top:.8rem; padding-top:.6rem; border-top:1px solid #ddd;">
+      <div class="row">
+        <label>投稿箱の背景色:
+          <select id="color-select">
+            <option value="#ffffff">白</option>
+            <option value="#e8f5e9">薄い緑</option>
+            <option value="#e3f2fd">薄い青</option>
+            <option value="#fff8e1">薄いオレンジ</option>
+            <option value="#fce4ec">薄いピンク</option>
+          </select>
+        </label>
+        <button id="save-color-btn">色を保存</button>
+      </div>
+      <div class="row" style="margin-top:.6rem; width:100%;">
+        <label style="width:100%;">ハッシュタグ編集（スペース区切り・「#」から）</label>
+        <input id="tag-input" type="text" placeholder="#数学 #テスト対策" />
+        <button id="save-tags-btn">タグを保存</button>
+      </div>
+      <div id="owner-message" class="muted"></div>
+    </div>
+  </div>
+
+  <h3>返信</h3>
+  <div id="reply-list" class="reply-list"></div>
+
+  <div class="editor">
+    <h4>返信を投稿</h4>
+    <textarea id="reply-text" placeholder="返信内容を入力してください"></textarea>
+    <input type="file" id="reply-image" accept="image/*" />
+    <div class="row">
+      <button id="send-reply-btn">返信を送信</button>
+      <span id="reply-message" class="muted"></span>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script>
+  // --- Firebase 設定（Study board.html と同じ） ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBfstQdl-avHfBWaiPkC0Bzwm_9apWe6Mo",
+    authDomain: "school-board-e2ee2.firebaseapp.com",
+    projectId: "school-board-e2ee2",
+    storageBucket: "school-board-e2ee2.appspot.com",
+    messagingSenderId: "257360614407",
+    appId: "1:257360614407:web:7cdae33b9ac7d7a671c6a2"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // --- ユーティリティ ---
+  const $ = (sel) => document.querySelector(sel);
+  function escapeHTML(str){ return (str||"").replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  function getParam(name){ return new URLSearchParams(location.search).get(name); }
+  function toLocal(dt){ return dt ? new Date(dt.seconds*1000).toLocaleString() : ""; }
+  function parseTags(s){ 
+    return (s||"")
+      .split(/\s+/)
+      .map(t=>t.trim())
+      .filter(t=>t.startsWith("#") && t.length>1);
+  }
+
+  const postId = getParam("id");
+  let currentPost = null;
+  let currentUser = null;
+
+  // --- 初期化 ---
+  auth.onAuthStateChanged(async (user)=>{
+    currentUser = user || null;
+    if(!postId){ alert("投稿IDが見つかりません"); return; }
+    await loadPost();
+    await loadReplies();
+    toggleOwnerTools();
+  });
+
+  async function loadPost(){
+    const doc = await db.collection("posts").doc(postId).get();
+    if(!doc.exists){ alert("投稿が見つかりません"); return; }
+    currentPost = { id: doc.id, ...doc.data() };
+
+    // 投稿箱レンダリング
+    const box = $("#post-box");
+    box.style.background = currentPost.boxColor || "#ffffff";
+
+    $("#post-icon").src = currentPost.userIconUrl || "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png";
+    $("#post-user").textContent = currentPost.userName || "不明";
+    $("#post-grade").textContent = `（${currentPost.userGrade || "未設定"}）`;
+    $("#post-time").textContent = toLocal(currentPost.createdAt);
+    $("#post-subject").textContent = currentPost.subject || "";
+    $("#post-content").textContent = currentPost.content || "";
+
+    if(currentPost.imageUrl){
+      $("#post-image").src = currentPost.imageUrl;
+      $("#post-image").style.display = "block";
+    }else{
+      $("#post-image").style.display = "none";
+    }
+
+    // ハッシュタグ
+    const tagWrap = $("#post-tags");
+    tagWrap.innerHTML = "";
+    (currentPost.hashtags || []).forEach(tag=>{
+      const span = document.createElement("span");
+      span.className = "tag";
+      span.textContent = tag;
+      span.addEventListener("click", ()=>{
+        // 一覧ページでそのタグ検索に遷移
+        location.href = `Study board.html?tag=${encodeURIComponent(tag)}`;
+      });
+      tagWrap.appendChild(span);
+    });
+
+    // 投稿者用の初期値
+    $("#color-select").value = currentPost.boxColor || "#ffffff";
+    $("#tag-input").value = (currentPost.hashtags || []).join(" ");
+  }
+
+  function toggleOwnerTools(){
+    const isOwner = currentUser && currentPost && currentUser.uid === currentPost.userId;
+    $("#owner-tools").style.display = isOwner ? "block" : "none";
+  }
+
+  // --- 返信一覧 ---
+  async function loadReplies(){
+    const snap = await db.collection("replies")
+      .where("postId","==",postId)
+      .orderBy("createdAt","asc")
+      .get();
+    const list = $("#reply-list");
+    list.innerHTML = "";
+    snap.forEach(doc=>{
+      const r = { id: doc.id, ...doc.data() };
+      const div = document.createElement("div");
+      const self = (r.userId === (currentPost?.userId || ""));
+      div.className = "reply" + (self ? " self" : "");
+      div.innerHTML = `
+        <div style="white-space:pre-wrap;">${escapeHTML(r.content || "")}</div>
+        ${r.imageUrl ? `<img src="${escapeHTML(r.imageUrl)}" alt="返信画像">` : ""}
+        <div class="meta" style="margin-top:.3rem;">
+          投稿者: ${escapeHTML(r.userName||"")} | ${toLocal(r.createdAt)}
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  // --- 返信投稿 ---
+  $("#send-reply-btn").addEventListener("click", async ()=>{
+    const msg = $("#reply-message");
+    msg.textContent = "";
+    const text = $("#reply-text").value.trim();
+    const file = $("#reply-image").files[0];
+
+    if(!currentUser){
+      msg.textContent = "返信にはログインが必要です。先に一覧ページでログインしてください。";
+      return;
+    }
+    if(!text){ msg.textContent = "返信内容を入力してください。"; return; }
+
+    $("#send-reply-btn").disabled = true;
+    try{
+      let imageUrl = "";
+      if(file){
+        const fileRef = storage.ref().child(`replies/${postId}/${Date.now()}_${file.name}`);
+        await fileRef.put(file);
+        imageUrl = await fileRef.getDownloadURL();
+      }
+      await db.collection("replies").add({
+        postId,
+        userId: currentUser.uid,
+        userName: currentUser.displayName || (currentUser.email||"").split("@")[0],
+        content: text,
+        imageUrl,
+        goodCount: 0,
+        userGoodIds: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      $("#reply-text").value = "";
+      $("#reply-image").value = "";
+      msg.textContent = "送信しました。";
+      await loadReplies();
+    }catch(e){
+      console.error(e);
+      msg.textContent = "送信に失敗しました。";
+    }
+    $("#send-reply-btn").disabled = false;
+  });
+
+  // --- 投稿者限定：色変更 & タグ編集 ---
+  $("#save-color-btn").addEventListener("click", async ()=>{
+    if(!currentUser || currentUser.uid !== currentPost.userId) return;
+    const color = $("#color-select").value || "#ffffff";
+    $("#owner-message").textContent = "";
+    try{
+      await db.collection("posts").doc(postId).update({ boxColor: color });
+      $("#post-box").style.background = color;
+      $("#owner-message").textContent = "背景色を保存しました。";
+    }catch(e){
+      console.error(e);
+      $("#owner-message").textContent = "保存に失敗しました。";
+    }
+  });
+
+  $("#save-tags-btn").addEventListener("click", async ()=>{
+    if(!currentUser || currentUser.uid !== currentPost.userId) return;
+    const tags = parseTags($("#tag-input").value);
+    $("#owner-message").textContent = "";
+    try{
+      await db.collection("posts").doc(postId).update({ hashtags: tags });
+      // 再描画
+      currentPost.hashtags = tags;
+      const tagWrap = $("#post-tags");
+      tagWrap.innerHTML = "";
+      tags.forEach(tag=>{
+        const s = document.createElement("span");
+        s.className = "tag";
+        s.textContent = tag;
+        s.addEventListener("click", ()=> location.href=`Study board.html?tag=${encodeURIComponent(tag)}`);
+        tagWrap.appendChild(s);
+      });
+      $("#owner-message").textContent = "タグを保存しました。";
+    }catch(e){
+      console.error(e);
+      $("#owner-message").textContent = "保存に失敗しました。";
+    }
+  });
+
+  // いいねボタン
+const goodBtn = document.getElementById("good-btn");
+const goodCountSpan = document.getElementById("good-count");
+
+async function loadGood() {
+  goodCountSpan.textContent = currentPost.goodCount || 0;
+}
+
+goodBtn.addEventListener("click", async () => {
+  if (!currentUser) {
+    alert("いいねにはログインが必要です");
+    return;
+  }
+  const docRef = db.collection("posts").doc(postId);
+
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(docRef);
+    if (!snap.exists) return;
+
+    const post = snap.data();
+    let userGoodIds = post.userGoodIds || [];
+    let count = post.goodCount || 0;
+
+    if (userGoodIds.includes(currentUser.uid)) {
+      count--;
+      userGoodIds = userGoodIds.filter(id => id !== currentUser.uid);
+    } else {
+      count++;
+      userGoodIds.push(currentUser.uid);
+    }
+
+    transaction.update(docRef, { goodCount: count, userGoodIds });
+  });
+
+  // 再取得して画面に反映
+  const newSnap = await docRef.get();
+  const newPost = newSnap.data();
+  goodCountSpan.textContent = newPost.goodCount || 0;
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>学力アップ掲示板アプリ（全部入り）</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ベース設定 */
+  body {
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0fff4;
+    color: #2a4d14;
+    margin: 0;
+    padding: 0;
+  }
+
+  header {
+    background: #4caf50;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.6rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  /* 通常（PC用）スタイル */
+    #icon-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+    }
+
+    /* ▼ スマホ対応（画面幅が600px以下のとき） */
+    @media (max-width: 600px) {
+      #icon-preview {
+        width: 50px;
+        height: 50px;
+      }
+    }
+
+  #login-container,
+  #app-container {
+    max-width: 700px;
+    margin: 1rem auto;
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+  }
+
+  #login-container:hover,
+  #app-container:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 入力・ボタン共通設定 */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0 12px;
+    border: 1px solid #4caf50;
+    border-radius: 4px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  button {
+    background: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 1.8rem;
+    margin: 6px 6px 6px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  button:hover:not(:disabled) {
+    background: #388e3c;
+  }
+
+  button:disabled {
+    background: #a5d6a7;
+    cursor: not-allowed;
+  }
+
+  /* メッセージ・フォーム */
+  #login-message,
+  #post-message,
+  #reply-message,
+  #search-message {
+    color: red;
+    margin-top: 0.5rem;
+  }
+
+  #goal-text {
+    background: #d0f0c0;
+    border-radius: 4px;
+    padding: 0.7rem;
+    margin-bottom: 1rem;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+  }
+
+  /* 投稿・返信・削除 */
+  .post, .reply {
+    border-bottom: 1px solid #ddd;
+    padding: 0.8rem 0;
+    animation: fadeInUp 0.5s ease forwards;
+  }
+
+  .post .content,
+  .reply .content {
+    white-space: pre-wrap;
+    margin-bottom: 0.4rem;
+  }
+
+  .post-footer,
+  .reply-footer {
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  .delete-btn {
+    margin-left: 1rem;
+    background: #c62828;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.3s ease;
+  }
+
+  .delete-btn:hover {
+    background: #a72828;
+  }
+
+  .btn-good {
+    cursor: pointer;
+    color: #388e3c;
+    font-weight: bold;
+    margin-left: 1rem;
+    user-select: none;
+  }
+
+  .btn-good.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+  button:active,
+  .btn-good:active,
+  .delete-btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+
+  /* カテゴリバッジ */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-left: 0.5rem;
+    color: white;
+  }
+  .badge.math { background: #2196f3; }
+  .badge.english { background: #ff9800; }
+  .badge.science { background: #673ab7; }
+  .badge.history { background: #795548; }
+
+  /* 画像・返信枠 */
+  .post-image,
+  .reply-image {
+    max-width: 200px;
+    max-height: 120px;
+    display: block;
+    margin-top: 0.4rem;
+    border-radius: 4px;
+  }
+
+  .reply-container {
+    margin-left: 1rem;
+    margin-top: 0.5rem;
+    border-left: 3px solid #4caf50;
+    padding-left: 0.6rem;
+    font-size: 0.9rem;
+    color: #2a4d14;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* サイドパネル */
+  #gear {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #4caf50;
+    user-select: none;
+    z-index: 2000;
+  }
+
+  #side-panel {
+  position: fixed;
+  top: 0;
+  right: -100%;  /* ← 修正：画面外に完全に隠す */
+  width: 320px;
+  height: 100vh;
+  background: #e8f5e9;
+  box-shadow: -4px 0 8px rgba(0,0,0,0.15);
+  padding: 1rem;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+  z-index: 1500;
+}
+
+  #side-panel.open {
+    right: 0;
+  }
+
+  #side-panel h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #4caf50;
+    padding-bottom: 0.5rem;
+    color: #2a4d14;
+  }
+
+  #side-panel button {
+    width: 100%;
+    margin: 0.7rem 0;
+    background: #4caf50;
+  }
+
+  #logout-btn {
+    background: #c62828 !important;
+  }
+
+  /* フィルター */
+  #filter-section {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  #filter-section > * {
+    flex: 1 1 150px;
+  }
+
+  /* ダークモード */
+  body.dark-mode {
+    background: #121212;
+    color: #f0f0f0;
+  }
+
+  body.dark-mode header {
+    background: #1e1e1e;
+    color: #ffffff;
+  }
+
+  body.dark-mode #login-container,
+  body.dark-mode #app-container {
+    background: #1e1e1e;
+    color: #f0f0f0;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
+  }
+
+  body.dark-mode input,
+  body.dark-mode select,
+  body.dark-mode textarea {
+    background: #222;
+    color: #fff;
+    border: 1px solid #4caf50;
+  }
+
+  body.dark-mode button {
+    background: #388e3c;
+  }
+
+  body.dark-mode #goal-text {
+    background: #2e4d2c;
+    color: #f0f0f0;
+  }
+
+  body.dark-mode .reply-container {
+    border-left: 3px solid #81c784;
+  }
+
+  body.dark-mode .post,
+  body.dark-mode .reply {
+    border-bottom: 1px solid #444;
+  }
+
+  body.dark-mode #side-panel {
+    background: #1b1b1b;
+  }
+
+  /* 投稿者名に色とアイコン */
+  .post-user-name {
+    font-weight: bold;
+    padding-left: 24px;
+    position: relative;
+    display: inline-block;
+    cursor: default;
+  }
+
+  .post-user-name::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #4caf50;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .post-user-name.self {
+    color: #2e7d32;
+  }
+
+  .post-user-name.self::before {
+    background-color: #1b5e20;
+  }
+
+  .reply-count {
+      font-size: 0.85rem;
+      color: #555;
+      margin-left: 1rem;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+
+    /* ランキングカードのコンテナを 3 列固定のグリッドに */
+#ranking-cards {
+  display: grid;
+  /* 3 列を必ず均等幅に。minmax(0,1fr) がカギ */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.good-display {
+    color: #388e3c;
+    font-weight: bold;
+    margin-left: 1rem;
+    user-select: none;
+    cursor: default; /* 押せない見た目 */
+  }
+
+
+/* 個々のカードを少し小さめにし、高さ自動でそろえる */
+.ranking-card {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  #toggle-post-form {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#toggle-post-form:hover {
+  background: #45a049;
+}
+
+#post-form-container {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  background: #fafafa;
+}
+}
+
+.post { cursor: pointer; }
+
+    
+</style>
+</head>
+<body>
+
+
+<header>学力アップ掲示板アプリ</header>
+
+<div id="login-container">
+  <h2>ログイン</h2>
+  <input type="text" id="username" placeholder="ユーザー名" />
+  <input type="password" id="password" placeholder="パスワード" />
+  <button id="login-btn">ログイン</button>
+  <button id="signup-btn">新規登録</button>
+  <p id="login-message"></p>
+</div>
+
+<div id="profile-setup" style="display:none; padding:1rem; border:2px dashed #ccc; margin-top:1rem;">
+  <h3>プロフィール設定</h3>
+  <label>学年:
+    <select id="profile-grade">
+      <option value="">選択してください</option>
+      <option value="中1">中1</option>
+      <option value="中2">中2</option>
+      <option value="中3">中3</option>
+    </select>
+  </label>
+  <br><br>
+  <label for="profile-icon-input">プロフィール画像：</label>
+  <input type="file" id="profile-icon-input">
+
+  <script>
+  document.getElementById("profile-icon-input").addEventListener("change", () => {
+    const file = document.getElementById("profile-icon-input").files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        let imgPreview = document.getElementById("icon-preview");
+        if (!imgPreview) {
+          imgPreview = document.createElement("img");
+          imgPreview.id = "icon-preview";
+          imgPreview.style.borderRadius = "50%";
+          document.getElementById("profile-icon-input").parentNode.appendChild(imgPreview);
+        }
+        imgPreview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+</script>
+
+
+
+  <br><br>
+  <button id="save-profile-btn">プロフィールを保存</button>
+
+  <script>
+  // 「プロフィールを保存」ボタン処理例
+  
+</script>
+
+  <p id="profile-setup-message" style="color:red;"></p>
+</div>
+
+
+<div id="app-container" style="display:none;">
+  <div id="gear" title="設定⚙️">⚙️</div>
+
+  <div id="welcome-msg"></div>
+
+  <!-- ここにランキングとおすすめ問題セクションを追加 -->
+  <div id="ranking-section" style="margin-bottom: 1rem;">
+    <h3>ランキング（グッド数順）</h3>
+    <div id="ranking-cards" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
+  </div>
+
+  <div id="recommended-section" style="margin-bottom: 1rem;">
+    <h3>おすすめ問題</h3>
+    <div id="recommended-posts"></div>
+  </div>
+
+  <div id="goal-text" style="display:none;">
+こんにちは！（ログイン名）さん！
+このwebアプリは学校の学力を上げるため、助け合い、教え合う掲示板です。
+みんなが共有していただくとありがたいです。
+  </div>
+
+  <div id="filter-section">
+    <select id="subject-filter" title="教科で絞る">
+      <option value="">すべての教科</option>
+      <option value="数学">数学</option>
+      <option value="国語">国語</option>
+      <option value="理科">理科</option>
+      <option value="社会">社会</option>
+      <option value="英語">英語</option>
+      <option value="その他">その他</option>
+    </select>
+    <input type="text" id="search-input" placeholder="キーワード検索" title="キーワードで検索" />
+    <button id="search-btn">検索</button>
+    <button id="reset-search-btn">リセット</button>
+    <p id="search-message"></p>
+  </div>
+
+  
+
+<button id="toggle-post-form">＋ 新しい投稿</button>
+<div id="post-form-container" style="display:none; margin-top:10px;">
+
+  <div id="post-form">
+    <h3>新しい投稿</h3>
+    <select id="post-subject">
+      <option value="数学">数学</option>
+      <option value="国語">国語</option>
+      <option value="理科">理科</option>
+      <option value="社会">社会</option>
+      <option value="英語">英語</option>
+      <option value="その他">その他</option>
+    </select>
+    <!-- 投稿箱の背景色選択 -->
+<label>投稿の背景色:
+  <select id="post-color">
+    <option value="#ffffff">白</option>
+    <option value="#e8f5e9">薄い緑</option>
+    <option value="#e3f2fd">薄い青</option>
+    <option value="#fff8e1">薄いオレンジ</option>
+    <option value="#fce4ec">薄いピンク</option>
+  </select>
+</label>
+<br><br>
+
+<!-- 人気タグ選択（複数選択OK） -->
+<label>人気のタグから選択:</label><br>
+<select id="post-popular-tags" multiple size="5">
+  <option value="#数学">#数学</option>
+  <option value="#英語">#英語</option>
+  <option value="#理科">#理科</option>
+  <option value="#国語">#国語</option>
+  <option value="#社会">#社会</option>
+  <option value="#テスト対策">#テスト対策</option>
+  <option value="#予想問題">#予想問題</option>
+</select>
+<br><br>
+
+<!-- 自由入力タグ -->
+<label>自由入力タグ:</label><br>
+<input type="text" id="post-custom-tags" placeholder="#自分のタグ #複数OK（スペース区切り）" />
+<br><br>
+
+    <textarea id="post-input" placeholder="質問や予想問題を入力してください"></textarea><br />
+    <input type="file" id="post-image-input" accept="image/*" />
+    <button id="post-btn">投稿する</button>
+    <p id="post-message"></p>
+  </div>
+</div>
+
+<select id="sort-select" title="並び順でソート">
+  <option value="goodDesc">グッド数順（多い順）</option>
+  <option value="newest">新しい順</option>
+  <option value="oldest">古い順</option>
+</select>
+
+  <div id="posts"></div>
+</div>
+
+<div id="side-panel" aria-hidden="true">
+  <h3>設定メニュー</h3>
+  <button id="toggle-goal-btn">目標非表示</button>
+  <button id="edit-profile-btn">プロフィール編集</button>
+  <button disabled>運営への質問・リクエスト（未実装）</button>
+  <button disabled>設定（未実装）</button>
+  <button id="toggle-darkmode-btn">ダークモードON</button>
+  <button id="logout-btn" style="margin-top:2rem; background:#c62828;">ログアウト</button>
+</div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <script>
+  // ここをあなたのFirebase設定に書き換えてください
+  const firebaseConfig = {
+  apiKey: "AIzaSyBfstQdl-avHfBWaiPkC0Bzwm_9apWe6Mo",
+  authDomain: "school-board-e2ee2.firebaseapp.com",
+  projectId: "school-board-e2ee2",
+storageBucket: "school-board-e2ee2.appspot.com",
+  messagingSenderId: "257360614407",
+  appId: "1:257360614407:web:7cdae33b9ac7d7a671c6a2"
+};
+
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // UI要素取得
+  const profileSetupDiv = document.getElementById("profile-setup");
+  const profileGrade = document.getElementById("profile-grade");
+  const profileIconInput = document.getElementById("profile-icon-input");
+  const saveProfileBtn = document.getElementById("save-profile-btn");
+  const profileMsg = document.getElementById("profile-setup-message");
+  const loginContainer = document.getElementById("login-container");
+  const appContainer = document.getElementById("app-container");
+  const loginMessage = document.getElementById("login-message");
+  const welcomeMsg = document.getElementById("welcome-msg");
+  const postInput = document.getElementById("post-input");
+  const postBtn = document.getElementById("post-btn");
+  const postsDiv = document.getElementById("posts");
+
+
+  // 投稿カード全体クリックで post.html へ（ボタン類は除外）
+  postsDiv.addEventListener("click", (e) => {
+    const interactive = e.target.closest("button, .btn-good, .reply-btn, .delete-btn, .reply-count, input, textarea, a");
+     if (interactive) return; // いいね/返信/削除/リンク/入力系は遷移させない
+
+    const postEl = e.target.closest(".post");
+     if (!postEl) return;
+
+    const id = postEl.dataset.id;
+     if (id) location.href = `post.html?id=${id}`;
+  });
+
+
+
+  const gearBtn = document.getElementById("gear");
+  const sidePanel = document.getElementById("side-panel");
+  const toggleGoalBtn = document.getElementById("toggle-goal-btn");
+  const goalText = document.getElementById("goal-text");
+  const logoutBtn = document.getElementById("logout-btn");
+  const postSubject = document.getElementById("post-subject");
+  const postImageInput = document.getElementById("post-image-input");
+  const subjectFilter = document.getElementById("subject-filter");
+  const searchInput = document.getElementById("search-input");
+  const searchBtn = document.getElementById("search-btn");
+  const resetSearchBtn = document.getElementById("reset-search-btn");
+  const searchMessage = document.getElementById("search-message");
+  const postMessage = document.getElementById("post-message");
+  
+
+  // ランキング・おすすめ表示用要素
+  const recommendedPostsDiv = document.getElementById("recommended-posts");
+  const rankingCardsDiv = document.getElementById("ranking-cards");
+
+  function renderRanking() {
+  rankingCardsDiv.innerHTML = "";
+  const sorted = [...posts]
+    .sort((a,b) => (b.goodCount || 0) - (a.goodCount || 0))
+    .slice(0, 3);
+
+  sorted.forEach(post => {
+    const card = document.createElement("div");
+    card.className = "ranking-card";   // ← class を付与
+    card.innerHTML = `
+      <div style="font-weight:bold;margin-bottom:0.4rem;">${escapeHTML(post.subject)}</div>
+      <div style="flex:1;">${escapeHTML(post.content).slice(0, 50)}...</div>
+      <div style="margin-top:0.4rem;font-size:0.8rem;">👍 ${post.goodCount || 0} グッド</div>
+    `;
+    rankingCardsDiv.appendChild(card);
+  });
+}
+
+  function renderRecommendedPosts() {
+  recommendedPostsDiv.innerHTML = ""; // ← h3を含めない
+  const recommended = posts.filter(p => (p.goodCount || 0) >= 3).slice(0, 3);
+  if (recommended.length === 0) {
+    recommendedPostsDiv.innerHTML += "<p>おすすめ投稿はまだありません。</p>";
+    return;
+  }
+  recommended.forEach(post => {
+    const div = document.createElement("div");
+    div.style = "padding:0.8rem;margin-bottom:0.5rem;background:#f1f8e9;border-radius:6px;";
+    div.innerHTML = `
+      <strong>${escapeHTML(post.subject)}</strong>: ${escapeHTML(post.content).slice(0, 80)}...<br>
+      👍 ${post.goodCount || 0} グッド
+    `;
+    recommendedPostsDiv.appendChild(div);
+  });
+}
+
+  
+
+  let posts = [];
+  let goalVisible = true;
+  let openReplyForms = {};
+  let darkMode = false;
+
+  // サイドパネル開閉
+  gearBtn.addEventListener("click", () => {
+    if (sidePanel.classList.contains("open")) {
+      sidePanel.classList.remove("open");
+      sidePanel.setAttribute("aria-hidden", "true");
+    } else {
+      sidePanel.classList.add("open");
+      sidePanel.setAttribute("aria-hidden", "false");
+    }
+  });
+
+  // 目標表示切替
+  toggleGoalBtn.addEventListener("click", () => {
+    goalVisible = !goalVisible;
+    goalText.style.display = goalVisible ? "block" : "none";
+    toggleGoalBtn.textContent = goalVisible ? "目標非表示" : "目標表示";
+  });
+
+  //ダークモード切替
+  const toggleDarkBtn = document.getElementById("toggle-darkmode-btn");
+  darkMode = false
+
+  toggleDarkBtn.addEventListener("click", () => {
+  darkMode = !darkMode;
+  document.body.classList.toggle("dark-mode", darkMode);
+  toggleDarkBtn.textContent = darkMode ? "ダークモードOFF" : "ダークモードON";
+});
+
+
+  // ログアウト
+  logoutBtn.addEventListener("click", () => {
+    auth.signOut();
+  });
+
+  const sortSelect = document.getElementById("sort-select");
+
+  sortSelect.addEventListener("change", () => {
+   renderPosts();
+  });
+
+  document.getElementById("toggle-post-form").addEventListener("click", () => {
+  const container = document.getElementById("post-form-container");
+  if (container.style.display === "none") {
+    container.style.display = "block";
+  } else {
+    container.style.display = "none";
+  }
+});
+
+  // 投稿表示を描画
+  function renderPosts() {
+  postsDiv.innerHTML = "";
+  let filtered = posts.filter(post => {
+    const matchSubject = subjectFilter.value === "" || post.subject === subjectFilter.value;
+    const keyword = searchInput.value.trim().toLowerCase();
+    const matchKeyword = keyword === "" || post.content.toLowerCase().includes(keyword) || post.userName.toLowerCase().includes(keyword);
+    return matchSubject && matchKeyword;
+  });
+
+  // 選択されたソート基準を取得
+  const sortType = sortSelect.value;
+
+  // ソート
+  filtered.sort((a, b) => {
+    if (sortType === "goodDesc") {
+      return (b.goodCount || 0) - (a.goodCount || 0) || (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+    } else if (sortType === "newest") {
+      return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+    } else if (sortType === "oldest") {
+      return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+    }
+    return 0;
+  });
+
+  filtered.forEach(post => {
+    postsDiv.appendChild(createPostElement(post));
+  });
+}
+
+
+  // HTMLエスケープ
+  function escapeHTML(str) {
+    if (!str) return "";
+    return str.replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+
+
+   // 投稿要素作成（修正版：グッドは数だけ表示）
+  function createPostElement(post) {
+    const div = document.createElement("div");
+    div.className = "post";
+    div.dataset.id = post.id;
+
+    const canDelete = post.userId === auth.currentUser.uid;
+
+    let html = `
+      <div class="post-header" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+        <img src="${escapeHTML(post.userIconUrl || 'https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png')}"
+             alt="アイコン"
+             style="width:36px;height:36px;border-radius:50%;">
+        <div>
+          <div><strong>${escapeHTML(post.userName)}</strong>（${escapeHTML(post.userGrade || '未設定')}）</div>
+          <div style="font-size:0.8rem;color:#555;">${post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : ""}</div>
+        </div>
+      </div>
+      <div><strong>教科：</strong>${escapeHTML(post.subject)}</div>
+      <div class="content">${escapeHTML(post.content)}</div>
+    `;
+
+    if (post.imageUrl) {
+      html += `<img src="${escapeHTML(post.imageUrl)}" alt="投稿画像" class="post-image">`;
+    }
+
+    html += `
+      <div class="post-footer">
+        投稿者: ${escapeHTML(post.userName)} | 日時: ${post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : ""}
+        <span class="good-display">👍 <span class="good-count">${post.goodCount || 0}</span></span>
+      </div>
+    `;
+
+    div.innerHTML = html;
+
+    // 投稿カードクリックで post.html へ（ボタンなどは除外）
+    div.addEventListener("click", (e) => {
+      if (e.target.closest("button, .good-display, .reply-btn, .delete-btn, .reply-count, input, textarea, a")) return;
+      location.href = `post.html?id=${post.id}`;
+    });
+
+    return div;
+  }
+
+
+
+
+
+  // 返信要素作成
+  function createReplyElement(reply, postId) {
+  const div = document.createElement("div");
+  div.className = "reply";
+  div.dataset.id = reply.id;
+
+  let goodClass = "btn-good";
+  if (reply.userGoodIds && reply.userGoodIds.includes(auth.currentUser.uid)) goodClass += " disabled";
+
+  // 自分の返信なら削除ボタン表示
+  const canDelete = reply.userId === auth.currentUser.uid;
+
+  let html = `
+  <div class="content">${escapeHTML(reply.content)}</div>
+`;
+if (reply.imageUrl) {
+  html += `<img src="${escapeHTML(reply.imageUrl)}" alt="返信画像" class="reply-image">`;
+}
+
+html += `
+  <div class="reply-footer">
+    投稿者: ${escapeHTML(reply.userName)} | 日時: ${reply.createdAt ? new Date(reply.createdAt.seconds * 1000).toLocaleString() : ""}
+    <span class="${goodClass}" title="グッド" style="margin-left:1rem;">👍 <span class="good-count">${reply.goodCount || 0}</span></span>
+    ${canDelete ? `<button class="delete-btn" style="margin-left:1rem; background:#c62828; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">削除</button>` : ""}
+  </div>
+`;
+
+
+  div.innerHTML = html;
+
+  // グッドボタンイベント
+  const goodBtn = div.querySelector(".btn-good");
+if (goodBtn) {
+  goodBtn.addEventListener("click", async () => {
+    try {
+      const replyDocRef = db.collection("replies").doc(reply.id);
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(replyDocRef);
+        if (!doc.exists) return;
+
+        const data = doc.data();
+        const goodIds = data.userGoodIds || [];
+        let goodCount = data.goodCount || 0;
+
+        if (goodIds.includes(auth.currentUser.uid)) {
+          // 取り消し
+          goodCount--;
+          transaction.update(replyDocRef, {
+            userGoodIds: goodIds.filter(id => id !== auth.currentUser.uid),
+            goodCount
+          });
+        } else {
+          // 追加
+          goodCount++;
+          transaction.update(replyDocRef, {
+            userGoodIds: [...goodIds, auth.currentUser.uid],
+            goodCount
+          });
+        }
+      });
+      fetchPosts();
+    } catch (e) {
+      console.error("グッド失敗:", e);
+    }
+  });
+}
+
+  // 削除ボタンイベント
+  if (canDelete) {
+    const deleteBtn = div.querySelector(".delete-btn");
+    deleteBtn.addEventListener("click", async () => {
+      if (!confirm("この返信を本当に削除しますか？")) return;
+      try {
+        await db.collection("replies").doc(reply.id).delete();
+        fetchPosts();
+      } catch (e) {
+        alert("削除エラーが発生しました。");
+        console.error(e);
+      }
+    });
+  }
+
+  return div;
+}
+
+
+  // 返信フォームを表示・非表示切替
+  function toggleReplyForm(postId, container) {
+  if (openReplyForms[postId]) {
+    openReplyForms[postId].remove();
+    delete openReplyForms[postId];
+    return;
+  }
+
+  // 返信フォームを form 要素で作成（submitイベント対応）
+  const form = document.createElement("form");
+  form.id = `reply-form-${postId}`;
+  form.innerHTML = `
+    <textarea name="reply-text" placeholder="返信内容を入力してください" rows="3" style="width:100%;"></textarea>
+    <input type="file" name="reply-image" accept="image/*" />
+    <button type="submit">返信を送信</button>
+    <p style="color:red;" class="reply-message"></p>
+  `;
+
+  container.appendChild(form);
+  openReplyForms[postId] = form;
+
+  const textarea = form.querySelector("textarea[name=reply-text]");
+  const fileInput = form.querySelector("input[name=reply-image]");
+  const msgP = form.querySelector(".reply-message");
+  const sendBtn = form.querySelector("button[type=submit]");
+
+  // submit イベントに変更
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); // ページリロード防止
+    const text = textarea.value.trim();
+    if (!text) {
+      msgP.textContent = "返信内容を入力してください";
+      return;
+    }
+    sendBtn.disabled = true;
+    msgP.textContent = "";
+
+    try {
+      let imageUrl = "";
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const storageRef = storage.ref();
+        const fileRef = storageRef.child(`replies/${postId}/${Date.now()}_${file.name}`);
+        await fileRef.put(file);
+        imageUrl = await fileRef.getDownloadURL();
+      }
+      await db.collection("replies").add({
+        postId: postId,
+        userId: auth.currentUser.uid,
+        userName: auth.currentUser.displayName || auth.currentUser.email.split("@")[0],
+        content: text,
+        imageUrl: imageUrl,
+        goodCount: 0,
+        userGoodIds: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      textarea.value = "";
+      fileInput.value = "";
+      msgP.style.color = "green";
+      msgP.textContent = "返信を送信しました";
+      form.remove();
+      delete openReplyForms[postId];
+      fetchPosts();
+    } catch (e) {
+      console.error(e);
+      msgP.style.color = "red";
+      msgP.textContent = "送信エラーが発生しました";
+    }
+    sendBtn.disabled = false;
+  });
+}
+
+
+  // 返信読み込み
+  async function loadReplies(postId, container) {
+    container.innerHTML = "返信を読み込み中...";
+    try {
+      const querySnapshot = await db.collection("replies")
+        .where("postId", "==", postId)
+        .orderBy("createdAt", "asc")
+        .get();
+      container.innerHTML = "";
+      querySnapshot.forEach(doc => {
+        const reply = {id: doc.id, ...doc.data()};
+        container.appendChild(createReplyElement(reply, postId));
+      });
+    } catch(e) {
+      container.innerHTML = "返信の読み込みに失敗しました";
+      console.error(e);
+    }
+  }
+
+  // グッドボタン切替（投稿or返信）
+  async function toggleGood(postId, replyId) {
+    const uid = auth.currentUser.uid;
+    let docRef;
+
+    if (replyId === null) {
+      docRef = db.collection("posts").doc(postId);
+    } else {
+      docRef = db.collection("replies").doc(replyId);
+    }
+
+    try {
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(docRef);
+        if (!doc.exists) throw "ドキュメントが存在しません";
+
+        let docData = doc.data();
+        let userGoodIds = docData.userGoodIds || [];
+        let goodCount = docData.goodCount || 0;
+
+        if (userGoodIds.includes(uid)) {
+          userGoodIds = userGoodIds.filter(id => id !== uid);
+          goodCount--;
+        } else {
+          userGoodIds.push(uid);
+          goodCount++;
+        }
+        transaction.update(docRef, {
+          userGoodIds: userGoodIds,
+          goodCount: goodCount
+        });
+      });
+      fetchPosts();
+    } catch(e) {
+      console.error("グッド更新エラー:", e);
+    }
+  }
+
+  // 投稿送信
+  postBtn.addEventListener("click", async () => {
+  
+  const content = postInput.value.trim();
+  const subject = postSubject.value;
+  const file = postImageInput.files[0];
+  postMessage.textContent = "";
+
+  if (!content) {
+    postMessage.textContent = "内容を入力してください";
+    return;
+  }
+
+  postBtn.disabled = true;
+  postMessage.style.color = "green";
+  postMessage.textContent = "投稿を処理中です…しばらくお待ちください";
+
+  try {
+    let imageUrl = "";
+    if (file) {
+      const storageRef = storage.ref();
+      const fileRef = storageRef.child(`posts/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+      await fileRef.put(file);
+      imageUrl = await fileRef.getDownloadURL();
+    }
+
+    // ユーザーのプロフィール情報を取得
+    const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+    const userData = userDoc.data() || {};
+
+    // =======================
+// 投稿色とハッシュタグの取得
+// =======================
+
+// 投稿の背景色（選択がなければ白）
+const colorSelect = document.getElementById("post-color");
+const postColor = colorSelect ? colorSelect.value : "#ffffff";
+
+// 人気タグ
+const popularTagsSelect = document.getElementById("post-popular-tags");
+const selectedPopularTags = popularTagsSelect
+  ? Array.from(popularTagsSelect.selectedOptions).map(o => o.value)
+  : [];
+
+// 自由入力タグ
+const customTagsInput = document.getElementById("post-custom-tags");
+const customTags = customTagsInput
+  ? customTagsInput.value.split(" ").filter(tag => tag.startsWith("#") && tag.length > 1)
+  : [];
+
+// 最終タグ配列
+const hashtags = [...selectedPopularTags, ...customTags];
+
+
+    await db.collection("posts").add({
+  userId: auth.currentUser.uid,
+  userName: auth.currentUser.displayName || auth.currentUser.email.split("@")[0],
+  subject,
+  content,
+  imageUrl,
+  goodCount: 0,
+  userGoodIds: [],
+  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  userGrade: userData.grade || "未設定",
+  userIconUrl: userData.iconUrl || "",
+  boxColor: postColor || "#ffffff",  // ← 必ず定義済み
+  hashtags: hashtags || []           // ← 必ず配列
+});
+
+    postInput.value = "";
+    postImageInput.value = "";
+    postMessage.textContent = "投稿されました！";
+    fetchPosts();
+
+  } catch (e) {
+    console.error(e);
+    postMessage.style.color = "red";
+    postMessage.textContent = "投稿エラーが発生しました";
+  }
+
+  postBtn.disabled = false;
+});
+
+
+
+  // 投稿取得と描画
+async function fetchPosts() {
+try {
+const snapshot = await db.collection("posts").get();
+posts = [];
+snapshot.forEach(doc => {
+posts.push({ id: doc.id, ...doc.data() });
+});
+renderPosts(); // 投稿リストを表示
+renderRanking(); // ランキング表示
+renderRecommendedPosts(); // おすすめ投稿表示
+} catch(e) {
+console.error(e);
+}
+}
+
+  // 検索とフィルターのイベント
+  searchBtn.addEventListener("click", () => {
+    searchMessage.textContent = "";
+    renderPosts();
+  });
+  resetSearchBtn.addEventListener("click", () => {
+    subjectFilter.value = "";
+    searchInput.value = "";
+    searchMessage.textContent = "";
+    renderPosts();
+  });
+  subjectFilter.addEventListener("change", () => {
+    renderPosts();
+  });
+
+  const editProfileBtn = document.getElementById("edit-profile-btn");
+
+editProfileBtn.addEventListener("click", async () => {
+  profileSetupDiv.style.display = "block";
+  appContainer.style.display = "none";
+
+  try {
+    const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+    if (userDoc.exists) {
+      const data = userDoc.data();
+      profileGrade.value = data.grade || "";
+      // 画像のプレビュー更新などもここで可能（必要なら追加）
+    }
+  } catch (e) {
+    console.error("プロフィール取得失敗:", e);
+  }
+});
+
+
+  // 認証状態監視
+  auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    // displayName がなければユーザーネームを入力させる
+    if (!user.displayName) {
+      const userName = prompt("こんにちは！ユーザーネームを入力してください。");
+      if (userName) {
+        await user.updateProfile({ displayName: userName });
+        // 再読み込みしなくても表示更新
+        welcomeMsg.textContent = `こんにちは！${userName}さん！`;
+        goalText.innerHTML = `こんにちは！${userName}さん！<br>このwebアプリは学校の学力を上げるため、助け合い、教え合う掲示板です。みんなが共有していただくとありがたいです。`;
+      }
+    } else {
+      welcomeMsg.textContent = `こんにちは！${user.displayName}さん！`;
+      goalText.innerHTML = `こんにちは！${user.displayName}さん！<br>このwebアプリは学校の学力を上げるため、助け合い、教え合う掲示板です。みんなが共有していただくとありがたいです。`;
+    }
+    goalText.style.display = goalVisible ? "block" : "none";
+    toggleGoalBtn.textContent = goalVisible ? "目標非表示" : "目標表示";
+    loginContainer.style.display = "none";
+    appContainer.style.display = "block";
+
+const userDoc = await db.collection("users").doc(user.uid).get();
+if (!userDoc.exists || !userDoc.data().grade || !userDoc.data().iconUrl) {
+  appContainer.style.display = "none";
+  profileSetupDiv.style.display = "block";
+} else {
+  profileSetupDiv.style.display = "none";
+  appContainer.style.display = "block";
+  fetchPosts();
+}
+
+  } else {
+    loginContainer.style.display = "block";
+    appContainer.style.display = "none";
+  }
+});
+
+
+  // ログイン・新規登録UI（簡易版）
+  const loginBtn = document.getElementById("login-btn");
+  const signupBtn = document.getElementById("signup-btn");
+
+  loginBtn.addEventListener("click", async () => {
+  loginMessage.textContent = "";
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    loginMessage.textContent = "ユーザー名とパスワードを入力してください";
+    return;
+  }
+
+  try {
+    // ダミーメールに変換
+    const fakeEmail = `${username}@myapp.local`;
+
+    await auth.signInWithEmailAndPassword(fakeEmail, password);
+  } catch (e) {
+    loginMessage.style.color = "red";
+    loginMessage.textContent = "ログイン失敗：" + e.message;
+  }
+});
+
+
+  signupBtn.addEventListener("click", async () => {
+  loginMessage.textContent = "";
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    loginMessage.textContent = "ユーザー名とパスワードを入力してください";
+    return;
+  }
+
+  try {
+    // Firestoreでユーザー名の重複チェック
+    const userDoc = await db.collection("usernames").doc(username).get();
+    if (userDoc.exists) {
+      loginMessage.style.color = "red";
+      loginMessage.textContent = "このユーザー名は既に使われています";
+      return;
+    }
+
+    // ダミーメールを生成
+    const fakeEmail = `${username}@myapp.local`;
+
+    // Firebase Authenticationに登録
+    const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
+    await userCredential.user.updateProfile({ displayName: username });
+
+    // Firestoreにマッピングを保存
+    await db.collection("usernames").doc(username).set({
+      uid: userCredential.user.uid
+    });
+    await db.collection("users").doc(userCredential.user.uid).set({
+      grade: "",
+      iconUrl: ""
+    });
+
+    loginMessage.style.color = "green";
+    loginMessage.textContent = "新規登録に成功しました！ログイン中です...";
+
+  } catch (e) {
+    console.error(e);
+    loginMessage.style.color = "red";
+    loginMessage.textContent = "登録エラー：" + e.message;
+  }
+});
+
+
+saveProfileBtn.addEventListener("click", async () => {
+  const grade = profileGrade.value;
+  const file = profileIconInput.files[0];
+
+  if (!grade) {
+    profileMsg.textContent = "学年を選択してください";
+    return;
+  }
+
+  saveProfileBtn.disabled = true;
+  profileMsg.textContent = "";
+
+  let iconUrl = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
+
+  try {
+    if (file) {
+      const fileRef = storage.ref().child(`icons/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+      await fileRef.put(file);
+      iconUrl = await fileRef.getDownloadURL();
+    }
+
+    // update を set に変更、マージモードで上書きしない
+    await db.collection("users").doc(auth.currentUser.uid).set({
+      grade,
+      iconUrl
+    }, { merge: true });
+
+    profileSetupDiv.style.display = "none";
+    appContainer.style.display = "block";
+    fetchPosts();
+  } catch (e) {
+    profileMsg.textContent = "保存エラーが発生しました";
+    console.error(e);
+  }
+
+  saveProfileBtn.disabled = false;
+});
+
+
+</script>
+</body>
+</html>
+
+
+
