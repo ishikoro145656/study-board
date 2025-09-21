@@ -34,7 +34,7 @@
 <body>
 <header>投稿詳細</header>
 <div class="container">
-  <a class="back" href="Study board.html">← 一覧へ戻る</a>
+  <a class="back" href="index.html">← 一覧へ戻る</a>
 
   <div id="post-box" class="post-box">
     <div class="post-head">
@@ -97,7 +97,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script>
-  // --- Firebase 設定（Study board.html と同じ） ---
+  // --- Firebase 設定（index.html と同じ） ---
   const firebaseConfig = {
     apiKey: "AIzaSyBfstQdl-avHfBWaiPkC0Bzwm_9apWe6Mo",
     authDomain: "school-board-e2ee2.firebaseapp.com",
@@ -168,7 +168,7 @@
       span.textContent = tag;
       span.addEventListener("click", ()=>{
         // 一覧ページでそのタグ検索に遷移
-        location.href = `Study board.html?tag=${encodeURIComponent(tag)}`;
+        location.href = `index.html?tag=${encodeURIComponent(tag)}`;
       });
       tagWrap.appendChild(span);
     });
@@ -278,7 +278,7 @@
         const s = document.createElement("span");
         s.className = "tag";
         s.textContent = tag;
-        s.addEventListener("click", ()=> location.href=`Study board.html?tag=${encodeURIComponent(tag)}`);
+        s.addEventListener("click", ()=> location.href=`index.html?tag=${encodeURIComponent(tag)}`);
         tagWrap.appendChild(s);
       });
       $("#owner-message").textContent = "タグを保存しました。";
@@ -331,3 +331,4 @@ goodBtn.addEventListener("click", async () => {
 </script>
 </body>
 </html>
+
